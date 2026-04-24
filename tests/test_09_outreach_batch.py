@@ -42,6 +42,7 @@ def test_build_outreach_batch_writes_tracker_and_messages(temp_dir: Path):
     assert len(batch.message_paths) == 2
     assert len(batch.intake_paths) == 2
     assert batch.reply_router_path == output_dir / "reply-router.md"
+    assert batch.send_queue_path == output_dir / "send-queue.md"
 
     rows = list(csv.DictReader(batch.csv_path.open(encoding="utf-8")))
     assert rows[0]["目标名称"] == "闲鱼短剧剪辑服务商 A"
@@ -86,6 +87,13 @@ def test_build_outreach_batch_writes_tracker_and_messages(temp_dir: Path):
     assert "可以试" in reply_router
     assert "直接索要素材" in reply_router
 
+    send_queue = batch.send_queue_path.read_text(encoding="utf-8")
+    assert "发送队列" in send_queue
+    assert "闲鱼搜索：短剧剪辑" in send_queue
+    assert "复制首条私信" in send_queue
+    assert "outreach-tracker.csv" in send_queue
+    assert "01-xian-yu-duan-ju-jian-ji-fu-wu-shang-a.md" in send_queue
+
 
 def test_build_outreach_batch_loads_prospects_from_json_file(temp_dir: Path):
     prospects_path = temp_dir / "prospects.json"
@@ -121,3 +129,4 @@ def test_build_outreach_batch_loads_prospects_from_json_file(temp_dir: Path):
     assert (batch.output_dir / "followups" / "01-duan-ju-lian-meng-qu-dao.md").exists()
     assert (batch.output_dir / "intake" / "01-duan-ju-lian-meng-qu-dao.md").exists()
     assert (batch.output_dir / "reply-router.md").exists()
+    assert (batch.output_dir / "send-queue.md").exists()

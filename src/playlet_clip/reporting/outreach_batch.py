@@ -31,6 +31,7 @@ class OutreachBatch:
     followup_paths: list[Path]
     intake_paths: list[Path]
     reply_router_path: Path
+    send_queue_path: Path
 
 
 def build_outreach_batch(
@@ -60,6 +61,7 @@ def build_outreach_batch(
     )
     reply_router_path = output_dir / "reply-router.md"
     reply_router_path.write_text(_render_reply_router(), encoding="utf-8")
+    send_queue_path = output_dir / "send-queue.md"
 
     message_paths = []
     followup_paths = []
@@ -76,6 +78,11 @@ def build_outreach_batch(
         intake_path.write_text(_render_intake(prospect), encoding="utf-8")
         intake_paths.append(intake_path)
 
+    send_queue_path.write_text(
+        _render_send_queue(prospect_items, message_paths, intake_paths, followup_paths),
+        encoding="utf-8",
+    )
+
     return OutreachBatch(
         output_dir=output_dir,
         csv_path=csv_path,
@@ -84,6 +91,7 @@ def build_outreach_batch(
         followup_paths=followup_paths,
         intake_paths=intake_paths,
         reply_router_path=reply_router_path,
+        send_queue_path=send_queue_path,
     )
 
 
@@ -256,6 +264,39 @@ def _render_reply_router() -> str:
             "",
         ]
     )
+
+
+def _render_send_queue(
+    prospects: Sequence[Prospect],
+    message_paths: Sequence[Path],
+    intake_paths: Sequence[Path],
+    followup_paths: Sequence[Path],
+) -> str:
+    lines = [
+        "# 发送队列",
+        "",
+        "目标：按顺序发完 5 条首触达，所有状态回填到 `outreach-tracker.csv`。",
+        "",
+    ]
+    for index, prospect in enumerate(prospects, start=1):
+        message_path = message_paths[index - 1]
+        intake_path = intake_paths[index - 1]
+        followup_path = followup_paths[index - 1]
+        lines.extend(
+            [
+                f"## {index}. {prospect.name}",
+                "",
+                f"- 渠道：{prospect.channel}",
+                f"- 入口：{prospect.entry}",
+                f"- 痛点：{prospect.pain_point}",
+                f"- 复制首条私信：`{message_path.name}`",
+                f"- 对方说可以试：发 `intake/{intake_path.name}`",
+                f"- 对方未回复或问价：看 `followups/{followup_path.name}`",
+                "- 发送后记录：状态=已发送，免费样片状态=已邀约，跟进日期=今天",
+                "",
+            ]
+        )
+    return "\n".join(lines)
 
 
 def _slugify(value: str) -> str:
