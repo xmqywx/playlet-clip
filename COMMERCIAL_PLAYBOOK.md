@@ -52,6 +52,25 @@ Playlet-Clip 不是单纯卖源码，而是面向短剧 CPS、书单号、图文
 
 如果你现在有短剧素材，我可以免费用 1 条样片演示效果。满意再聊部署或代剪。
 
+### 生成今日外联批次
+
+用高优先级客户清单生成 CSV 跟进表、今日批次说明和逐客户私信：
+
+```bash
+uv run python scripts/build_outreach_batch.py \
+  --prospects examples/high-priority-prospects.json \
+  --output-dir ../../output/playlet-clip-outreach-2026-04-24 \
+  --batch-name "Playlet-Clip 第一批高意向触达" \
+  --free-sample-slots 3 \
+  --package-path ../../output/playlet-clip-demo/customer-package
+```
+
+生成后优先使用：
+
+- `outreach-tracker.csv`：跟进状态表。
+- `today-batch.md`：当天触达顺序和执行规则。
+- `messages/`：每个渠道一条可复制私信。
+
 ### 朋友圈/小红书版
 
 短剧二创最耗时的不是剪辑软件，而是反复听剧情、写解说、配音、调字幕。我这边做了一个自动化流程：上传原视频后，自动识别字幕、生成解说、配音并合成短视频。

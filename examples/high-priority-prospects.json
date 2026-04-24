@@ -1,0 +1,42 @@
+[
+  {
+    "name": "闲鱼短剧剪辑服务商",
+    "channel": "闲鱼",
+    "prospect_type": "服务商/个人卖家",
+    "entry": "闲鱼搜索：短剧剪辑、短剧 CPS、推剧",
+    "pain_point": "已经在卖短剧剪辑或推剧服务，需要更快交付更多素材",
+    "priority": "高"
+  },
+  {
+    "name": "巨量星图短剧达人",
+    "channel": "巨量星图",
+    "prospect_type": "达人/MCN",
+    "entry": "巨量星图站内搜索：短剧 CPS、推剧、短剧达人",
+    "pain_point": "有挂载和发布经验，需要多风格样片测试",
+    "priority": "高"
+  },
+  {
+    "name": "视频号短剧推广团队",
+    "channel": "视频号",
+    "prospect_type": "私域/视频号团队",
+    "entry": "微信视频号搜索：短剧推广、推剧、剧场",
+    "pain_point": "视频号团队缺稳定素材产能，适合本地部署交付",
+    "priority": "高"
+  },
+  {
+    "name": "短剧分销平台 dspcps",
+    "channel": "dspcps",
+    "prospect_type": "短剧 CPS 平台",
+    "entry": "https://help.dspcps.com/",
+    "pain_point": "平台覆盖多渠道达人，需要提升达人素材产能",
+    "priority": "高"
+  },
+  {
+    "name": "短剧联盟推剧联盟",
+    "channel": "短剧联盟",
+    "prospect_type": "短剧授权分销平台",
+    "entry": "https://tchuihua.cn/",
+    "pain_point": "旗下达人需要批量素材和可复制的样片流程",
+    "priority": "高"
+  }
+]
