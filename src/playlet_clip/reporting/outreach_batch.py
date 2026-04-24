@@ -29,6 +29,8 @@ class OutreachBatch:
     markdown_path: Path
     message_paths: list[Path]
     followup_paths: list[Path]
+    intake_paths: list[Path]
+    reply_router_path: Path
 
 
 def build_outreach_batch(
@@ -42,9 +44,11 @@ def build_outreach_batch(
     prospect_items = _load_prospects(prospects)
     messages_dir = output_dir / "messages"
     followups_dir = output_dir / "followups"
+    intake_dir = output_dir / "intake"
     output_dir.mkdir(parents=True, exist_ok=True)
     messages_dir.mkdir(parents=True, exist_ok=True)
     followups_dir.mkdir(parents=True, exist_ok=True)
+    intake_dir.mkdir(parents=True, exist_ok=True)
 
     csv_path = output_dir / "outreach-tracker.csv"
     _write_tracker(csv_path, prospect_items)
@@ -54,9 +58,12 @@ def build_outreach_batch(
         _render_batch_markdown(batch_name, free_sample_slots, package_path, prospect_items),
         encoding="utf-8",
     )
+    reply_router_path = output_dir / "reply-router.md"
+    reply_router_path.write_text(_render_reply_router(), encoding="utf-8")
 
     message_paths = []
     followup_paths = []
+    intake_paths = []
     for index, prospect in enumerate(prospect_items, start=1):
         filename = f"{index:02d}-{_slugify(prospect.name)}.md"
         message_path = messages_dir / filename
@@ -65,6 +72,9 @@ def build_outreach_batch(
         followup_path = followups_dir / filename
         followup_path.write_text(_render_followup(prospect), encoding="utf-8")
         followup_paths.append(followup_path)
+        intake_path = intake_dir / filename
+        intake_path.write_text(_render_intake(prospect), encoding="utf-8")
+        intake_paths.append(intake_path)
 
     return OutreachBatch(
         output_dir=output_dir,
@@ -72,6 +82,8 @@ def build_outreach_batch(
         markdown_path=markdown_path,
         message_paths=message_paths,
         followup_paths=followup_paths,
+        intake_paths=intake_paths,
+        reply_router_path=reply_router_path,
     )
 
 
@@ -199,6 +211,48 @@ def _render_followup(prospect: Prospect) -> str:
             "## 报价跟进",
             "",
             "如果只是你自己用，我建议先走本地部署包，999-1999 元区间，交付部署、API 配置和基础培训。如果你们是团队批量测素材，可以走样片启动包或工作室自动化包，把风格模板和批量处理一起交付。",
+            "",
+        ]
+    )
+
+
+def _render_intake(prospect: Prospect) -> str:
+    return "\n".join(
+        [
+            f"# {prospect.name} 素材收集说明",
+            "",
+            "## 可复制版本",
+            "",
+            "可以，我先免费给你跑 1 条样片。为了保证能当天出结果，麻烦按下面格式发我素材：",
+            "",
+            "## 素材提交要求",
+            "",
+            "1. 发 1 段 30-90 秒竖屏原片，优先 9:16，MP4 最好。",
+            "2. 素材需要是你们已授权可二创/推广的短剧片段。",
+            "3. 如果有挂载小程序或落地页要求，可以一起发；没有也可以先只看样片效果。",
+            "4. 我会交付一版成片和一份处理报告，先看节奏、字幕、解说和配音是否适合你们账号。",
+            "5. 不承诺流量、爆单或绕平台风控，只验证素材生产效率和风格可复制性。",
+            "",
+            f"备注：你们当前重点是{prospect.pain_point}，所以这条样片会优先看是否能减少人工剪辑和文案时间。",
+            "",
+        ]
+    )
+
+
+def _render_reply_router() -> str:
+    return "\n".join(
+        [
+            "# 回复分流",
+            "",
+            "| 对方回复 | 处理动作 | 使用材料 |",
+            "| --- | --- | --- |",
+            "| 可以试 / 怎么试 / 发什么素材 | 直接索要素材 | `intake/` 对应客户文件 |",
+            "| 多少钱 | 先强调免费样片，再给 999-1999 元本地部署包区间 | `followups/` 报价跟进段落 |",
+            "| 能不能保证播放/转化 | 说明不承诺流量，只验证素材生产效率和风格 | `intake/` 合规边界 |",
+            "| 没素材 / 先了解 | 暂缓，只发演示包，不做定制 | `messages/` 首条私信和演示包路径 |",
+            "| 要批量/团队用 | 索要一条真实素材，样片通过后再谈批量处理 | `followups/` 样片交付后段落 |",
+            "",
+            "首要目标：拿到 1 条 30-90 秒真实竖屏短剧素材。",
             "",
         ]
     )

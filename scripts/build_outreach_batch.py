@@ -31,6 +31,9 @@ def main() -> int:
     print(f"Outreach tracker written: {batch.csv_path}")
     print(f"Today batch written: {batch.markdown_path}")
     print(f"Messages written: {len(batch.message_paths)}")
+    print(f"Followups written: {len(batch.followup_paths)}")
+    print(f"Intake requests written: {len(batch.intake_paths)}")
+    print(f"Reply router written: {batch.reply_router_path}")
     return 0
 
 

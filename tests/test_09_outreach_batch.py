@@ -40,6 +40,8 @@ def test_build_outreach_batch_writes_tracker_and_messages(temp_dir: Path):
     assert batch.csv_path == output_dir / "outreach-tracker.csv"
     assert batch.markdown_path == output_dir / "today-batch.md"
     assert len(batch.message_paths) == 2
+    assert len(batch.intake_paths) == 2
+    assert batch.reply_router_path == output_dir / "reply-router.md"
 
     rows = list(csv.DictReader(batch.csv_path.open(encoding="utf-8")))
     assert rows[0]["目标名称"] == "闲鱼短剧剪辑服务商 A"
@@ -70,6 +72,19 @@ def test_build_outreach_batch_writes_tracker_and_messages(temp_dir: Path):
     assert "素材追问" in followup
     assert "报价跟进" in followup
     assert "999-1999 元" in followup
+
+    intake = (output_dir / "intake" / "01-xian-yu-duan-ju-jian-ji-fu-wu-shang-a.md").read_text(
+        encoding="utf-8"
+    )
+    assert "素材提交要求" in intake
+    assert "30-90 秒竖屏原片" in intake
+    assert "已授权" in intake
+    assert "不承诺流量" in intake
+
+    reply_router = batch.reply_router_path.read_text(encoding="utf-8")
+    assert "回复分流" in reply_router
+    assert "可以试" in reply_router
+    assert "直接索要素材" in reply_router
 
 
 def test_build_outreach_batch_loads_prospects_from_json_file(temp_dir: Path):
@@ -104,3 +119,5 @@ def test_build_outreach_batch_loads_prospects_from_json_file(temp_dir: Path):
     assert rows[0]["优先级"] == "高"
     assert (batch.output_dir / "messages" / "01-duan-ju-lian-meng-qu-dao.md").exists()
     assert (batch.output_dir / "followups" / "01-duan-ju-lian-meng-qu-dao.md").exists()
+    assert (batch.output_dir / "intake" / "01-duan-ju-lian-meng-qu-dao.md").exists()
+    assert (batch.output_dir / "reply-router.md").exists()
