@@ -64,3 +64,8 @@ class ProcessResult(BaseModel):
     # Intermediate results
     subtitles_path: Path | None = Field(default=None, description="Extracted subtitles path")
     narration_json_path: Path | None = Field(default=None, description="Generated narration JSON")
+
+    @property
+    def status(self) -> TaskStatus:
+        """Legacy status accessor for older tests and scripts."""
+        return TaskStatus.COMPLETED if self.success else TaskStatus.FAILED

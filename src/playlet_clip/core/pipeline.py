@@ -9,7 +9,6 @@ from typing import Callable
 from loguru import logger
 
 from playlet_clip.core.config import Settings
-from playlet_clip.core.exceptions import PlayletClipError
 from playlet_clip.models.segment import NarrationSegment
 from playlet_clip.models.task import ProcessResult, TaskProgress, TaskStatus
 from playlet_clip.services.asr import ASRService
@@ -35,6 +34,10 @@ class PlayletPipeline:
         self.tts = TTSService(settings.tts)
         self.llm = LLMService(settings.llm)
         self.video = VideoService(settings.video)
+        self.asr_service = self.asr
+        self.tts_service = self.tts
+        self.llm_service = self.llm
+        self.ffmpeg = self.video
 
         # Load default prompt template
         self._default_prompt_template = self._load_default_prompt()
@@ -58,9 +61,11 @@ class PlayletPipeline:
     async def process(
         self,
         video_path: Path,
-        style: str,
+        style: str | None = None,
         output_path: Path | None = None,
         progress_callback: Callable[[TaskProgress], None] | None = None,
+        style_name: str | None = None,
+        srt_path: Path | None = None,
     ) -> ProcessResult:
         """
         Process a video with full pipeline.
@@ -74,6 +79,19 @@ class PlayletPipeline:
         Returns:
             ProcessResult with output path and metadata
         """
+        style = style or style_name
+        if style is None:
+            style = self.settings.styles[0].name if self.settings.styles else "默认风格"
+
+        if srt_path is not None:
+            return await self.process_with_existing_subtitles(
+                video_path=video_path,
+                srt_path=srt_path,
+                style=style,
+                output_path=output_path,
+                progress_callback=progress_callback,
+            )
+
         start_time = time.time()
         temp_dir = self.settings.paths.temp_dir / f"task_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         temp_dir.mkdir(parents=True, exist_ok=True)

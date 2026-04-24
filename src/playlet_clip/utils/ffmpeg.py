@@ -322,3 +322,117 @@ class FFmpegWrapper:
             raise VideoProcessingError(f"{operation} failed: {error_msg}")
 
         logger.debug(f"{operation} completed successfully")
+
+
+class FFmpegProcessor(FFmpegWrapper):
+    """Backward-compatible FFmpeg processor API used by tests and scripts."""
+
+    def __init__(self, config=None):
+        """Initialize processor with optional video settings."""
+        super().__init__()
+        self.config = config
+
+    async def get_duration(self, video_path: Path) -> float:
+        """Get video duration in seconds."""
+        return await self.get_video_duration(video_path)
+
+    async def trim(
+        self,
+        video_path: Path,
+        start_time: float,
+        duration: float,
+        output_path: Path,
+    ) -> Path:
+        """Trim video segment using the legacy argument order."""
+        return await self.trim_video(
+            video_path=video_path,
+            output_path=output_path,
+            start_time=start_time,
+            duration=duration,
+        )
+
+    async def concat(self, video_paths: list[Path], output_path: Path) -> Path:
+        """Concatenate videos using the legacy method name."""
+        return await self.concat_videos(video_paths, output_path)
+
+    async def add_blur(self, video_path: Path, output_path: Path) -> Path:
+        """Apply the configured subtitle-area blur to a video."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        blur_height = getattr(self.config, "blur_height", 185)
+        blur_y = getattr(self.config, "blur_y", 1413)
+        blur_sigma = getattr(self.config, "blur_sigma", 20)
+        video_codec = getattr(self.config, "video_codec", "libx264")
+        audio_codec = getattr(self.config, "audio_codec", "aac")
+        preset = getattr(self.config, "preset", "fast")
+
+        filter_complex = (
+            f"[0:v]crop=iw:{blur_height}:0:{blur_y},gblur=sigma={blur_sigma}[blur];"
+            f"[0:v][blur]overlay=0:{blur_y}[vout]"
+        )
+
+        cmd = [
+            self.ffmpeg_path,
+            "-y",
+            "-i",
+            str(video_path),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[vout]",
+            "-map",
+            "0:a?",
+            "-c:v",
+            video_codec,
+            "-preset",
+            preset,
+            "-c:a",
+            audio_codec,
+            str(output_path),
+        ]
+
+        await self._run_command(cmd, "Adding blur")
+        return output_path
+
+    async def add_subtitle(
+        self,
+        video_path: Path,
+        subtitle_path: Path,
+        output_path: Path,
+    ) -> Path:
+        """Burn subtitles into a video using the configured subtitle margin."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        subtitle_path_escaped = str(subtitle_path).replace("\\", "/").replace(":", "\\:")
+        subtitle_margin = getattr(self.config, "subtitle_margin", 65)
+        video_codec = getattr(self.config, "video_codec", "libx264")
+        audio_codec = getattr(self.config, "audio_codec", "aac")
+        preset = getattr(self.config, "preset", "fast")
+
+        vf = (
+            f"subtitles='{subtitle_path_escaped}':"
+            f"force_style='FontName=Noto Sans CJK SC,MarginV={subtitle_margin}'"
+        )
+
+        cmd = [
+            self.ffmpeg_path,
+            "-y",
+            "-i",
+            str(video_path),
+            "-vf",
+            vf,
+            "-map",
+            "0:v",
+            "-map",
+            "0:a?",
+            "-c:v",
+            video_codec,
+            "-preset",
+            preset,
+            "-c:a",
+            audio_codec,
+            str(output_path),
+        ]
+
+        await self._run_command(cmd, "Adding subtitle")
+        return output_path
