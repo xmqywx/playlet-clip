@@ -1,6 +1,7 @@
 """Generate sales outreach batches for customer validation."""
 
 import csv
+import html
 import json
 import re
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ class OutreachBatch:
     intake_paths: list[Path]
     reply_router_path: Path
     send_queue_path: Path
+    send_console_path: Path
 
 
 def build_outreach_batch(
@@ -62,6 +64,7 @@ def build_outreach_batch(
     reply_router_path = output_dir / "reply-router.md"
     reply_router_path.write_text(_render_reply_router(), encoding="utf-8")
     send_queue_path = output_dir / "send-queue.md"
+    send_console_path = output_dir / "send-console.html"
 
     message_paths = []
     followup_paths = []
@@ -82,6 +85,10 @@ def build_outreach_batch(
         _render_send_queue(prospect_items, message_paths, intake_paths, followup_paths),
         encoding="utf-8",
     )
+    send_console_path.write_text(
+        _render_send_console(prospect_items, message_paths, intake_paths, followup_paths),
+        encoding="utf-8",
+    )
 
     return OutreachBatch(
         output_dir=output_dir,
@@ -92,6 +99,7 @@ def build_outreach_batch(
         intake_paths=intake_paths,
         reply_router_path=reply_router_path,
         send_queue_path=send_queue_path,
+        send_console_path=send_console_path,
     )
 
 
@@ -297,6 +305,82 @@ def _render_send_queue(
             ]
         )
     return "\n".join(lines)
+
+
+def _render_send_console(
+    prospects: Sequence[Prospect],
+    message_paths: Sequence[Path],
+    intake_paths: Sequence[Path],
+    followup_paths: Sequence[Path],
+) -> str:
+    cards = []
+    for index, prospect in enumerate(prospects, start=1):
+        message_text = message_paths[index - 1].read_text(encoding="utf-8")
+        intake_text = intake_paths[index - 1].read_text(encoding="utf-8")
+        followup_text = followup_paths[index - 1].read_text(encoding="utf-8")
+        cards.append(
+            "\n".join(
+                [
+                    '<section class="card">',
+                    f"<h2>{index}. {html.escape(prospect.name)}</h2>",
+                    f"<p><strong>渠道：</strong>{html.escape(prospect.channel)}</p>",
+                    f"<p><strong>入口：</strong>{html.escape(prospect.entry)}</p>",
+                    f"<p><strong>痛点：</strong>{html.escape(prospect.pain_point)}</p>",
+                    _render_copy_block(f"p{index}-message", "首条私信", message_text),
+                    _render_copy_block(f"p{index}-intake", "素材收集", intake_text),
+                    _render_copy_block(f"p{index}-followup", "跟进话术", followup_text),
+                    '<p class="tracker">发送后回填 outreach-tracker.csv：状态=已发送，免费样片状态=已邀约，跟进日期=今天。</p>',
+                    "</section>",
+                ]
+            )
+        )
+    return "\n".join(
+        [
+            "<!doctype html>",
+            '<html lang="zh-CN">',
+            "<head>",
+            '<meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            "<title>Playlet-Clip 外联发送控制台</title>",
+            "<style>",
+            "body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:24px;background:#f6f7f9;color:#1f2937}",
+            "main{max-width:1080px;margin:0 auto}",
+            ".card{background:#fff;border:1px solid #d9dee7;border-radius:8px;padding:18px;margin:16px 0}",
+            ".block{border-top:1px solid #edf0f5;margin-top:14px;padding-top:14px}",
+            "textarea{width:100%;min-height:160px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:10px;font-size:14px;line-height:1.5}",
+            "button{border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:6px;padding:7px 12px;cursor:pointer}",
+            ".tracker{background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:10px}",
+            "</style>",
+            "</head>",
+            "<body>",
+            "<main>",
+            "<h1>Playlet-Clip 外联发送控制台</h1>",
+            "<p>按顺序发送首条私信；对方回复可以试时复制素材收集；未回复或问价时复制跟进话术。所有动作回填 outreach-tracker.csv。</p>",
+            *cards,
+            "</main>",
+            "<script>",
+            "function copyText(id){const el=document.getElementById(id);el.select();document.execCommand('copy');}",
+            "</script>",
+            "</body>",
+            "</html>",
+            "",
+        ]
+    )
+
+
+def _render_copy_block(element_key: str, title: str, text: str) -> str:
+    element_id = _slugify(element_key)
+    escaped_title = html.escape(title)
+    escaped_text = html.escape(text)
+    return "\n".join(
+        [
+            '<div class="block">',
+            f"<h3>{escaped_title}</h3>",
+            f'<button type="button" onclick="copyText(\'{element_id}\')">复制{escaped_title}</button>',
+            f'<textarea id="{element_id}" readonly>{escaped_text}</textarea>',
+            "</div>",
+        ]
+    )
 
 
 def _slugify(value: str) -> str:

@@ -35,6 +35,7 @@ def main() -> int:
     print(f"Intake requests written: {len(batch.intake_paths)}")
     print(f"Reply router written: {batch.reply_router_path}")
     print(f"Send queue written: {batch.send_queue_path}")
+    print(f"Send console written: {batch.send_console_path}")
     return 0
 
 
