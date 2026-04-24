@@ -28,6 +28,7 @@ class OutreachBatch:
     csv_path: Path
     markdown_path: Path
     message_paths: list[Path]
+    followup_paths: list[Path]
 
 
 def build_outreach_batch(
@@ -40,8 +41,10 @@ def build_outreach_batch(
     """Create a CSV tracker and copy-ready outreach messages."""
     prospect_items = _load_prospects(prospects)
     messages_dir = output_dir / "messages"
+    followups_dir = output_dir / "followups"
     output_dir.mkdir(parents=True, exist_ok=True)
     messages_dir.mkdir(parents=True, exist_ok=True)
+    followups_dir.mkdir(parents=True, exist_ok=True)
 
     csv_path = output_dir / "outreach-tracker.csv"
     _write_tracker(csv_path, prospect_items)
@@ -53,16 +56,22 @@ def build_outreach_batch(
     )
 
     message_paths = []
+    followup_paths = []
     for index, prospect in enumerate(prospect_items, start=1):
-        message_path = messages_dir / f"{index:02d}-{_slugify(prospect.name)}.md"
+        filename = f"{index:02d}-{_slugify(prospect.name)}.md"
+        message_path = messages_dir / filename
         message_path.write_text(_render_message(prospect, package_path), encoding="utf-8")
         message_paths.append(message_path)
+        followup_path = followups_dir / filename
+        followup_path.write_text(_render_followup(prospect), encoding="utf-8")
+        followup_paths.append(followup_path)
 
     return OutreachBatch(
         output_dir=output_dir,
         csv_path=csv_path,
         markdown_path=markdown_path,
         message_paths=message_paths,
+        followup_paths=followup_paths,
     )
 
 
@@ -83,6 +92,10 @@ def _write_tracker(path: Path, prospects: Sequence[Prospect]) -> None:
         "优先级",
         "状态",
         "下一步",
+        "免费样片状态",
+        "报价阶段",
+        "预计金额",
+        "跟进日期",
         "备注",
     ]
     with path.open("w", encoding="utf-8", newline="") as csv_file:
@@ -99,6 +112,10 @@ def _write_tracker(path: Path, prospects: Sequence[Prospect]) -> None:
                     "优先级": prospect.priority,
                     "状态": "待发送",
                     "下一步": "发送首条私信，索要 30-90 秒真实素材",
+                    "免费样片状态": "未邀约",
+                    "报价阶段": "未报价",
+                    "预计金额": "",
+                    "跟进日期": "",
                     "备注": "",
                 }
             )
@@ -161,6 +178,27 @@ def _render_message(prospect: Prospect, package_path: Path) -> str:
             "如果你方便，可以发一段 30-90 秒竖屏短剧原片。我会给你一版成片和处理报告，满意后再聊部署、代跑或批量样片，不满意不收费。",
             "",
             f"演示包路径：`{package_path}`",
+            "",
+        ]
+    )
+
+
+def _render_followup(prospect: Prospect) -> str:
+    return "\n".join(
+        [
+            f"# {prospect.name} 跟进话术",
+            "",
+            "## 素材追问",
+            "",
+            f"你好，昨天提到的短剧样片我这边还可以给你留一个名额。你们现在的主要痛点是{prospect.pain_point}，先发一段 30-90 秒竖屏原片就行，我只做一版样片和处理报告，不需要你先改流程。",
+            "",
+            "## 样片交付后",
+            "",
+            "这条样片已经跑完，报告里有字幕数、解说段数和输出路径。你可以先看节奏和文案方向，如果要继续测，我建议先做 3 条不同风格，比单条更容易判断能不能稳定出素材。",
+            "",
+            "## 报价跟进",
+            "",
+            "如果只是你自己用，我建议先走本地部署包，999-1999 元区间，交付部署、API 配置和基础培训。如果你们是团队批量测素材，可以走样片启动包或工作室自动化包，把风格模板和批量处理一起交付。",
             "",
         ]
     )
