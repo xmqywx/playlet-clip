@@ -246,6 +246,38 @@ result = await pipeline.process_with_existing_subtitles(
 )
 ```
 
+### 生成样片报告
+
+处理完成后，可把输出视频、字幕和解说 JSON 汇总成客户可读的 Markdown 交付报告：
+
+```bash
+uv run python scripts/generate_sample_report.py \
+  --input-video data/input/demo.mp4 \
+  --output-video data/output/demo_result.mp4 \
+  --subtitles data/temp/subtitles.srt \
+  --narration-json data/temp/narration.json \
+  --duration 87.4 \
+  --style 反转悬疑 \
+  --report-path data/output/demo-sample-report.md
+```
+
+报告会统计处理状态、商业风格、字幕条数、解说段数、总片段数、处理耗时和交付文件路径，适合随样片一起发给客户确认。
+
+### 生成客户演示包
+
+已有样片报告和截图后，可打包成一个可直接发给潜在客户的演示目录：
+
+```bash
+uv run python scripts/build_demo_package.py \
+  --sample-report data/output/demo-sample-report.md \
+  --screenshot docs/web-ui.png \
+  --output-dir data/output/demo-package \
+  --offer-name 样片启动包 \
+  --offer-price 1999-3999元
+```
+
+演示包包含 `README.md`、`sample-report.md`、`outreach-message.md` 和 `screenshots/`，用于私信转化和交付确认。
+
 ---
 
 ## 📁 项目结构
@@ -297,6 +329,8 @@ playlet-clip/
 │   └── docker-compose.yml      # 编排配置
 │
 ├── scripts/                    # 脚本工具
+│   ├── build_demo_package.py    # 客户演示包生成脚本
+│   ├── generate_sample_report.py # 样片交付报告生成脚本
 │   ├── install_cosyvoice.sh    # CosyVoice 安装脚本
 │   └── run_tests.sh            # 测试运行脚本
 │
