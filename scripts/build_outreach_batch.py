@@ -36,6 +36,8 @@ def main() -> int:
     print(f"Reply router written: {batch.reply_router_path}")
     print(f"Send queue written: {batch.send_queue_path}")
     print(f"Send console written: {batch.send_console_path}")
+    print(f"Send log CSV written: {batch.send_log_csv_path}")
+    print(f"Send log guide written: {batch.send_log_markdown_path}")
     return 0
 
 

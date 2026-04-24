@@ -44,6 +44,8 @@ def test_build_outreach_batch_writes_tracker_and_messages(temp_dir: Path):
     assert batch.reply_router_path == output_dir / "reply-router.md"
     assert batch.send_queue_path == output_dir / "send-queue.md"
     assert batch.send_console_path == output_dir / "send-console.html"
+    assert batch.send_log_csv_path == output_dir / "send-log.csv"
+    assert batch.send_log_markdown_path == output_dir / "send-log.md"
 
     rows = list(csv.DictReader(batch.csv_path.open(encoding="utf-8")))
     assert rows[0]["目标名称"] == "闲鱼短剧剪辑服务商 A"
@@ -107,6 +109,18 @@ def test_build_outreach_batch_writes_tracker_and_messages(temp_dir: Path):
     assert "copyText('p1-intake')" in send_console
     assert "copyText('p1-followup')" in send_console
 
+    send_log_rows = list(csv.DictReader(batch.send_log_csv_path.open(encoding="utf-8")))
+    assert send_log_rows[0]["目标名称"] == "闲鱼短剧剪辑服务商 A"
+    assert send_log_rows[0]["发送状态"] == "待发送"
+    assert send_log_rows[0]["回复状态"] == "未回复"
+    assert send_log_rows[0]["素材状态"] == "未收到"
+    assert send_log_rows[0]["下一步"] == "发送首条私信"
+
+    send_log_markdown = batch.send_log_markdown_path.read_text(encoding="utf-8")
+    assert "发送日志填写说明" in send_log_markdown
+    assert "收到素材后" in send_log_markdown
+    assert "send-console.html" in send_log_markdown
+
 
 def test_build_outreach_batch_loads_prospects_from_json_file(temp_dir: Path):
     prospects_path = temp_dir / "prospects.json"
@@ -144,3 +158,5 @@ def test_build_outreach_batch_loads_prospects_from_json_file(temp_dir: Path):
     assert (batch.output_dir / "reply-router.md").exists()
     assert (batch.output_dir / "send-queue.md").exists()
     assert (batch.output_dir / "send-console.html").exists()
+    assert (batch.output_dir / "send-log.csv").exists()
+    assert (batch.output_dir / "send-log.md").exists()

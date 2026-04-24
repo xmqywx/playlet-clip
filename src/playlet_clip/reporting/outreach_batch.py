@@ -34,6 +34,8 @@ class OutreachBatch:
     reply_router_path: Path
     send_queue_path: Path
     send_console_path: Path
+    send_log_csv_path: Path
+    send_log_markdown_path: Path
 
 
 def build_outreach_batch(
@@ -65,6 +67,8 @@ def build_outreach_batch(
     reply_router_path.write_text(_render_reply_router(), encoding="utf-8")
     send_queue_path = output_dir / "send-queue.md"
     send_console_path = output_dir / "send-console.html"
+    send_log_csv_path = output_dir / "send-log.csv"
+    send_log_markdown_path = output_dir / "send-log.md"
 
     message_paths = []
     followup_paths = []
@@ -89,6 +93,8 @@ def build_outreach_batch(
         _render_send_console(prospect_items, message_paths, intake_paths, followup_paths),
         encoding="utf-8",
     )
+    _write_send_log(send_log_csv_path, prospect_items)
+    send_log_markdown_path.write_text(_render_send_log_markdown(), encoding="utf-8")
 
     return OutreachBatch(
         output_dir=output_dir,
@@ -100,6 +106,8 @@ def build_outreach_batch(
         reply_router_path=reply_router_path,
         send_queue_path=send_queue_path,
         send_console_path=send_console_path,
+        send_log_csv_path=send_log_csv_path,
+        send_log_markdown_path=send_log_markdown_path,
     )
 
 
@@ -144,6 +152,41 @@ def _write_tracker(path: Path, prospects: Sequence[Prospect]) -> None:
                     "报价阶段": "未报价",
                     "预计金额": "",
                     "跟进日期": "",
+                    "备注": "",
+                }
+            )
+
+
+def _write_send_log(path: Path, prospects: Sequence[Prospect]) -> None:
+    fieldnames = [
+        "目标名称",
+        "渠道",
+        "入口",
+        "发送状态",
+        "发送时间",
+        "回复状态",
+        "回复摘要",
+        "素材状态",
+        "素材路径",
+        "下一步",
+        "备注",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+        writer.writeheader()
+        for prospect in prospects:
+            writer.writerow(
+                {
+                    "目标名称": prospect.name,
+                    "渠道": prospect.channel,
+                    "入口": prospect.entry,
+                    "发送状态": "待发送",
+                    "发送时间": "",
+                    "回复状态": "未回复",
+                    "回复摘要": "",
+                    "素材状态": "未收到",
+                    "素材路径": "",
+                    "下一步": "发送首条私信",
                     "备注": "",
                 }
             )
@@ -363,6 +406,27 @@ def _render_send_console(
             "</script>",
             "</body>",
             "</html>",
+            "",
+        ]
+    )
+
+
+def _render_send_log_markdown() -> str:
+    return "\n".join(
+        [
+            "# 发送日志填写说明",
+            "",
+            "先打开 `send-console.html` 复制话术，再把每个目标的执行状态写入 `send-log.csv`。",
+            "",
+            "## 字段规则",
+            "",
+            "- 发送状态：待发送 / 已发送 / 暂缓 / 无入口。",
+            "- 回复状态：未回复 / 愿意试 / 问价格 / 拒绝 / 只了解。",
+            "- 素材状态：未收到 / 已收到 / 不合规 / 待补充。",
+            "- 素材路径：收到素材后写本地路径，优先放到 `data/input/` 或本轮 output 目录。",
+            "- 下一步：发送首条私信 / 发素材收集 / 跑样片报告 / 报价本地部署包 / 暂缓。",
+            "",
+            "收到素材后：先确认 30-90 秒竖屏、已授权可二创/推广，再跑样片报告，不要先承诺流量结果。",
             "",
         ]
     )
